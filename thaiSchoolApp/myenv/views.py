@@ -4,7 +4,7 @@ from django.db.models import Q
 import json 
 
 from .models import SummaryData,SchoolData
-from .seriallizers import SchoolDataSerializer
+# from .seriallizers import SchoolDataSerializer
 # Create your views here.
 
 def index (request):
