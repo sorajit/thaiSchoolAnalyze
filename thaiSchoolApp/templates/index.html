@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- เรียก library jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <title>Document</title>
+</head>
+<body>
+
+  <label for="fprovince">จังหวัด</label>
+  <select name="fprovince" id="fprovince" class="w3-select">
+  </select>
+  <input type="button" class="w3-button w3-blue" value="Submit" onclick="testGet();"><br>
+
+  <form>
+    <label for="product">Product</label>
+    <input type="text" name="product" id="product">
+</form>
+
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+  <script>
+
+    function testGet(){
+    var select = document.getElementById("fprovince");
+        select.options.length = 0;
+        
+      var sector = 'เหนือ';
+      var get_url = '/getProvinceFromDB';
+      var resp;
+      var result = $.ajax({url: get_url,
+          type: 'GET',
+          dataType: 'text',
+          data: {sector}, 
+          async: false,
+          success: function(data){
+              resp = data;
+          }
+      });
+      result.then(function(res){
+        // console.log(JSON.parse(res));
+        var res_json = JSON.parse(res);
+        for(index in res_json){
+          select.options[select.options.length] = new Option(index, res_json[index]);
+        }
+      });
+    }
+
+    $( function() {
+    $( "#product" ).autocomplete({
+      source: '{% url "index" %}',
+      minLength: 5
+    });
+  } );
+  </script>
+</body>
+</html>
