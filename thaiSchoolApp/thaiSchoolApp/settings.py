@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 from pathlib import Path
-from ElephantSQLConfig import ElephantSQLDataBase as configDB
+from configRDSPostgreSQL import RDSPostgresSQL as configDB
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'myenv'
+    'myenv',
+    'whitenoise.runserver_nostatic'
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'thaiSchoolApp.urls'
@@ -82,7 +84,7 @@ DATABASES = {
             'USER' : configDB['user'],
             'PASSWORD' : configDB['password'],
             'HOST': configDB['host'],
-            'PORT' : '5432'
+            'PORT' : configDB['port']
         }
 }
 

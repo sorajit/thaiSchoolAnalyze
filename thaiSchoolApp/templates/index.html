@@ -173,7 +173,7 @@
       var g_cur_province = "";
 
       var g_cur_startPageItem = 0;
-      var pageLenght = 50;
+      var pageLenght = 30;
       var cur_page = 0;
       var last_page = 0;
 
@@ -244,6 +244,9 @@
           });
           focusGroup.removeFrom(map); //ป้องกันกรณีที่ผู้ใช้งานกดเลือก focusGroupLayer อยู่ขณะที่ดึงข้อมูลจาก database
           resultGroup.addTo(map);
+          document.getElementById("dataArrowContainer").style.display = "none";
+          cur_page = 0;
+          last_page = 0;
           createTableAndAssignColor(school);
         });
       }
