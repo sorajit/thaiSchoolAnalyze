@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- เอามาจาก leaflet เริ่มจากส่วนนี้-->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <!-- จนถึงส่วนนี้ -->
+
+    <!--นำเข้า turf -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <!-- เรียก library jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+
+    <!-- สไตล์สำหรับสร้างลูกศร -->
+    <style>
+      #tableProperties {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      #dataArrowContainer {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+      }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+
+    <!-- library from datatables.net to create clickable table -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css"
+    />
+    <script defer src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script
+      defer
+      src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"
+    ></script>
+    <!-- <script>
+      $(document).ready(function () {
+        $("#example").DataTable();
+      });
+    </script> -->
+    <!-- end libraray from clickable table -->
+
+    <!-- style for navBar -->
+    <!-- <script defer src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+    <script defer src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+    />
+
+    <title>Thai School Map</title>
+  </head>
+
+  <body>
+    <div id="mapid" style="width: 100%; height: 400px"></div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Navbar</a>
+        <form
+          class="d-flex"
+          role="search-here"
+          onkeydown="return event.key != 'Enter';"
+        >
+          <label for="search-here"></label>
+          <input
+            class="form-control me-2"
+            type="search"
+            name="search-here"
+            id="search-here"
+            placeholder="Search"
+            aria-label="Search"
+          />
+          <button
+            class="btn btn-outline-success"
+            type="button"
+            onclick="searchSchoolByName();"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+    </nav>
+    <label for="fsector">ภาค</label>
+    <select
+      name="fsecter"
+      id="fsector"
+      class="w3-select"
+      onchange="getProvinceFromDB();"
+    >
+      <option value="ทุกภาค">ทุกภาค</option>
+      <option value="เหนือ">เหนือ</option>
+      <option value="กลาง">กลาง</option>
+      <option value="ตะวันออกเฉียงเหนือ">ตะวันออกเฉียงเหนือ</option>
+      <option value="ใต้">ใต้</option>
+    </select>
+    <label for="fsize">ขนาด</label>
+    <select name="fsize" id="fsize" class="w3-select">
+      <option value="ทุกขนาด">ทุกขนาด</option>
+      <option value="เล็ก">เล็ก</option>
+      <option value="กลาง">กลาง</option>
+      <option value="ใหญ่">ใหญ่</option>
+      <option value="ใหญ่">ใหญ่พิเศษ</option>
+    </select>
+    <!-- <label for="fsexual">เพศ</label>
+    <select name="fsexual" id="fsexual" class="w3-select">
+        <option value="ทั้งหมด">ทั้งหมด</option>
+        <option value="หญิง">หญิง</option>
+        <option value="ชาย">ฺฺชาย</option>
+    </select> -->
+    <!-- <input type="button" class="w3-button w3-blue" value="Submit"> -->
+    <input
+      type="button"
+      class="w3-button w3-blue"
+      value="Submit"
+      onclick="filterPoi();"
+    />
+    <input
+      type="button"
+      id="detailBtn"
+      class="w3-button w3-blue"
+      style="display: none"
+      value="detail"
+      onclick="goToDetailPage();"
+    />
+    <br />
+    <!-- <a href="{% url 'detailPage' %}">link text</a> -->
+    <label for="fprovince">จังหวัด</label>
+    <select name="fprovince" id="fprovince" class="w3-select">
+      <option value="ทุกจังหวัด">ทุกจังหวัด</option>
+    </select>
+
+    <script>
+      // -------------------- set variable----------------------------------------------------------------
+      var g_cur_sector = "";
+      var g_cur_size = "";
+      var g_cur_province = "";
+
+      var g_cur_startPageItem = 0;
+      var pageLenght = 30;
+      var cur_page = 0;
+      var last_page = 0;
+
+      var clickedMarker;
+      ///------------------------set Icon------------------------------------------------------------------
+      var blueIcon = new L.Icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+        shadowUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      });
+      var greenIcon = new L.Icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+        shadowUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      });
+      // -----------------------------Function section------------------------------------------
+      ///---------------------------Search school by Name ----------------------------------------
+      $(function () {
+        $("#search-here").autocomplete({
+          source: '{% url "index" %}',
+          minLength: 5,
+        });
+      });
+      // ฟังก์ชันสำหรับ search หาชื่อโรงเรียนใน database
+      function searchSchoolByName() {
+        var searchSchoolName = document.getElementById("search-here").value;
+        request = { "searchSchoolName": searchSchoolName };
+        var get_url = '{% url "index" %}';
+        var resp;
+        var result = $.ajax({
+          url: get_url,
+          type: "GET",
+          dataType: "text",
+          data: request,
+          async: true,
+          success: function (data) {
+            resp = data;
+          },
+          error: function (error) {
+            var error_json = JSON.parse(error.responseText);
+            alert(error_json["message"]);
+          },
+        });
+        result.then(function (res) {
+          if (resultGroup != null) {
+            map.removeLayer(resultGroup);
+            resultGroup.clearLayers();
+          }
+          clearMarker();
+          // res <= {'count': int or str , 'schoolJson_list':[{...},{...},...]}
+          var res_json = JSON.parse(res);
+          var count = res_json.count;
+          var school = res_json.schoolJson_list;
+          resultLayer = L.geoJSON(school[0], {
+            pointToLayer: function (feature, latlng) {
+              return settingMarker(feature, latlng);
+            },
+          });
+          focusGroup.removeFrom(map); //ป้องกันกรณีที่ผู้ใช้งานกดเลือก focusGroupLayer อยู่ขณะที่ดึงข้อมูลจาก database
+          resultGroup.addTo(map);
+          document.getElementById("dataArrowContainer").style.display = "none";
+          cur_page = 0;
+          last_page = 0;
+          createTableAndAssignColor(school);
+        });
+      }
+      ///---------------------------End Search school by Name ----------------------------------------
+      ///---------------------Query and Make marker function section---------------------------------
+
+      function getProvinceFromDB() {
+        var select = document.getElementById("fprovince");
+        select.options.length = 0;
+
+        var opSector = document.getElementById("fsector");
+        var sector = opSector.options[opSector.selectedIndex].text;
+        if (sector == "ทุกภาค") {
+          select.options[select.options.length] = new Option(
+            "ทุกจังหวัด",
+            "ทุกจังหวัด",
+            (defaultSelected = true),
+            (selected = true)
+          );
+        } else {
+          var get_url = "/getProvinceFromDB";
+          var resp;
+          var result = $.ajax({
+            url: get_url,
+            type: "GET",
+            dataType: "text",
+            data: { sector },
+            async: false,
+            success: function (data) {
+              resp = data;
+            },
+          });
+          result.then(function (res) {
+            var res_json = JSON.parse(res);
+            for (index in res_json) {
+              select.options[select.options.length] = new Option(
+                index,
+                res_json[index]
+              );
+            }
+            select.options[select.options.length] = new Option(
+              "ทุกจังหวัด",
+              "ทุกจังหวัด",
+              (defaultSelected = true),
+              (selected = true)
+            );
+          });
+        }
+      }
+
+      function clearMarker() {
+        if (marker_arr.length > 0) {
+          for (i = 0; i < marker_arr.length; i++) {
+            map.removeLayer(marker_arr[i]);
+          }
+        }
+        marker_arr.length = 0;
+      }
+
+      function filterPoi() {
+        var opSector = document.getElementById("fsector");
+        g_cur_sector = opSector.options[opSector.selectedIndex].text;
+
+        var opProvince = document.getElementById("fprovince");
+        g_cur_province = opProvince.options[opProvince.selectedIndex].text;
+
+        var opSize = document.getElementById("fsize");
+        g_cur_size = opSize.options[opSize.selectedIndex].text;
+
+        g_cur_startPageItem = 0;
+        cur_page = 1;
+        var req_count = true;
+        request = {
+          sector: g_cur_sector,
+          province: g_cur_province,
+          size: g_cur_size,
+          startPageItem: g_cur_startPageItem,
+          pageLenght: pageLenght,
+          req_count: req_count,
+        };
+        reqFilterPoiToDB(request);
+      }
+
+      function reqFilterPoiToDB(request) {
+        if (resultGroup != null) {
+          map.removeLayer(resultGroup);
+          resultGroup.clearLayers();
+        }
+        clearMarker();
+
+        var get_url = "/filterPoi";
+        var resp;
+        var result = $.ajax({
+          url: get_url,
+          type: "GET",
+          dataType: "text",
+          data: request,
+          async: true,
+          success: function (data) {
+            resp = data;
+          },
+        });
+
+        result.then(function (res) {
+          // res <= {'count': int or str , 'schoolJson_list':[{...},{...},...]}
+          var res_json = JSON.parse(res);
+          var count = res_json.count;
+          var school = res_json.schoolJson_list;
+          // loop to object in list
+          for (let i = 0; i < school.length; i++) {
+            resultLayer = L.geoJSON(school[i], {
+              pointToLayer: function (feature, latlng) {
+                return settingMarker(feature, latlng);
+              },
+            });
+          }
+          focusGroup.removeFrom(map); //ป้องกันกรณีที่ผู้ใช้งานกดเลือก focusGroupLayer อยู่ขณะที่ดึงข้อมูลจาก database
+          resultGroup.addTo(map);
+          if (school.length != 0) {
+            createPageUL(count);
+            createTableAndAssignColor(school);
+          } else {
+            cleanTableContainer(); //ลบ child ทั้งหมดใน TBcontainer
+            document.getElementById("dataArrowContainer").style.display =
+              "none";
+            cur_page = 0;
+            last_page = 0;
+          }
+        });
+      }
+
+      function settingMarker(feature, latlng) {
+        var content = `
+                  <label for="name">Name: </label>
+                  <input type="text" id="name" value="${feature.properties.name}"><br>
+
+                  <input type="button" class="w3-button w3-blue" value="Submit" onclick="addMarkerToFocusGroup(); clickedMarker.closePopup();">
+              `;
+        marker = L.marker(latlng, {
+          icon: blueIcon,
+          schoolID: feature.properties.schoolID,
+        })
+          .bindPopup(feature.properties.name)
+          .bindPopup(content)
+          .on("click", function (event) {
+            clickedMarker = this;
+          });
+        // console.log("marker :"+marker);
+        marker.addTo(resultGroup);
+        return marker;
+      }
+
+      function pageButton(num) {
+        var check_page = cur_page + num;
+        if (check_page < 1) {
+          return;
+        }
+        if (check_page > last_page) {
+          return;
+        }
+        cur_page = cur_page + num;
+        g_cur_startPageItem = pageLenght * (cur_page - 1);
+        req_count = false;
+        request = {
+          sector: g_cur_sector,
+          province: g_cur_province,
+          size: g_cur_size,
+          startPageItem: g_cur_startPageItem,
+          pageLenght: pageLenght,
+          req_count: req_count,
+        };
+        reqFilterPoiToDB(request);
+        document.getElementById("curPageText").innerHTML =
+          cur_page.toString() + "/" + last_page.toString();
+      }
+
+      function goToDetailPage() {
+        let focus_marker = focusGroup.getLayers();
+        if (focus_marker.length == 0) {
+          alert("pleas select at least 1 school");
+          return;
+        }
+        let focus_schoolID = focus_marker.map((marker) => {
+          return marker.options.schoolID;
+        });
+        a = document.createElement("a");
+        a.setAttribute(
+          "href",
+          "/detailPage?school_id=" + focus_schoolID.join(",")
+        );
+        a.click();
+      }
+      ///-------------End Query and Make marker function section---------------------------------
+      /// ------------ Interactive Maker and Table function section------------------------------
+      function addMarkerToFocusGroup(marker) {
+        // the button from table will send marker to this function but button from map don't
+        if (arguments.length != 0) {
+          clickedMarker = marker;
+        }
+        clickedID = clickedMarker.options.schoolID;
+        var focusGroupMarker = focusGroup.getLayers();
+        for (let i = 0; i < focusGroupMarker.length; i++) {
+          var checkingID = focusGroupMarker[i].options.schoolID;
+          if (checkingID == clickedID) {
+            console.log("already Add");
+            return;
+          }
+        }
+        // add clickedMarker to focusGroup
+        var markerGeoJson = clickedMarker.toGeoJSON();
+        var landmarkJson = L.geoJSON(markerGeoJson, {
+          pointToLayer: function (feature, latlng) {
+            var content = `
+                  <label for="name">Name: </label>
+                  <input type="text" id="name" value="${feature.properties.name}"><br>
+
+                  <input type="button" class="w3-button w3-blue" value="remove" onclick="removeMarkerFocusGroup();">
+              `;
+            focus_marker = L.marker(latlng, {
+              icon: blueIcon,
+              schoolID: feature.properties.schoolID,
+            }) //เข้าถึง schoolID จาก marker ไม่ได้ จึงต้องนำมาเพิ่มใน options
+              .bindPopup(content)
+              .on("click", function (event) {
+                clickedMarker = this;
+              });
+            focus_marker.addTo(focusGroup);
+            return focus_marker;
+          },
+        });
+        // //เปลี่ยนสี marker และ table ที่สอดคล้องกับ marker
+        coloringMarkerAndTable(clickedMarker);
+        // var leafID = clickedMarker._leaflet_id;
+        // resultGroup.getLayer(leafID).setIcon(greenIcon);
+        // //เปลี่ยนสีตารางที่คู่กับ marker
+        // var tb_row = document.getElementById("markerID" + clickedID.toString());
+        // var tb_dt = tb_row.getElementsByTagName("td");
+        // for (let i = 0; i < tb_dt.length; i++) {
+        //   tb_dt[i].style.background = "yellow";
+        // }
+      }
+
+      function removeMarkerFocusGroup(marker) {
+        if (arguments.length != 0) {
+          clickedMarker = marker;
+        }
+        var removeMarkID = clickedMarker.options.schoolID;
+        var cur_q_layer_marker = resultGroup.getLayers();
+        for (let i = 0; i < cur_q_layer_marker.length; i++) {
+          var checkingID = cur_q_layer_marker[i].options.schoolID;
+          if (checkingID == removeMarkID) {
+            var leafID = cur_q_layer_marker[i]._leaflet_id;
+            resultGroup.getLayer(leafID).setIcon(blueIcon);
+            break;
+          }
+        }
+
+        focusGroup.removeLayer(clickedMarker);
+        var tb = document.getElementById("tableProperties_tbody");
+        console.log(tb);
+        var tb_row = document.getElementById(
+          "markerID" + removeMarkID.toString()
+        );
+        console.log(tb_row);
+        tb.removeChild(tb_row);
+
+        // var tb_row = document.getElementById(
+        //   "markerID" + removeMarkID.toString()
+        // );
+        // var tb_dt = tb_row.getElementsByTagName("td");
+        // for (let i = 0; i < tb_dt.length; i++) {
+        //   tb_dt[i].style.background = "White";
+        // }
+      }
+
+      function setBtnInTable(schoolID, callFrom) {
+        var layer;
+        var all_marker;
+        var TBmarker;
+        if (callFrom == "resultGroup") {
+          layer = resultGroup;
+        } else {
+          layer = focusGroup;
+        }
+        //หา marker ที่มี schoolID สอดคล้องกับปุ่มในตาราง
+        all_marker = layer.getLayers();
+        for (let i = 0; i < all_marker.length; i++) {
+          var checkingID = all_marker[i].options.schoolID;
+          if (checkingID == schoolID) {
+            TBmarker = all_marker[i];
+            break;
+          }
+        }
+        // เซ็ตปุ่มในตาราง โดยถ้า layer ที่แสดงอยู่เป็น resultGroup ให้ทำการเพิ่ม marker ไปใน focusGroup 
+        // แต่เป็น focusGroup ให้นำ marker ออกจาก focusGroup
+        if (callFrom == "resultGroup") {
+          addMarkerToFocusGroup(TBmarker);
+        } else {
+          removeMarkerFocusGroup(TBmarker);
+        }
+      }
+
+      function assingColorMarkerAndTable(resultIDinFocus) {
+        //assign color in resultLayer (Marker and Table)  (resultIDinFocus is a array of shoolID)
+        var result_marker = resultGroup.getLayers();
+        for (let i = 0; i < result_marker.length; i++) {
+          let checkID = result_marker[i].options.schoolID;
+          if (resultIDinFocus.includes(checkID)) {
+            coloringMarkerAndTable(result_marker[i]);
+          }
+        }
+      }
+
+      function coloringMarkerAndTable(marker) {
+        schoolID = marker.options.schoolID;
+        marker.setIcon(greenIcon);
+        var tb_row = document.getElementById("markerID" + schoolID.toString());
+        var tb_dt = tb_row.getElementsByTagName("td");
+        for (let i = 0; i < tb_dt.length; i++) {
+          tb_dt[i].style.background = "yellow";
+        }
+      }
+      /// ------------ End Interactive Maker and Table function section------------------------------
+
+      ///----------------------Make Tabel function section--------------------------------------------
+      function cleanTableContainer() {
+        var e = document.getElementById("TBcontainer");
+        //e.firstElementChild can be used.
+        var child = e.lastElementChild;
+        while (child) {
+          e.removeChild(child);
+          child = e.lastElementChild;
+        }
+      }
+      // จะถูกเรียนกจาก function reqFilterPoiToDB เมื่อดึงข้อมูลจาก DataBase เท่านั้น
+      function createPageUL(count) {
+        if (count != "None") {
+          last_page = Math.ceil(count / pageLenght);
+          document.getElementById("dataArrowContainer").style.display = "flex";
+          document.getElementById("curPageText").innerHTML =
+            cur_page.toString() + "/" + last_page.toString();
+        }
+      }
+      // สร้างตาราง และตรวจสอบว่ามี mark อยู่ใน focus group หรือไม่ ถ้ามีจะเปลี่ยนสีตาราง และ marker
+      function createTableAndAssignColor(school, callFrom = "resultGroup") {
+        //school ={'geoData':......, 'properties':{json data that use to show in table}}
+        // callFrom is layer name
+        var btntext;
+        if (callFrom == "resultGroup") {
+          btntext = "submit";
+        } else {
+          btntext = "remove";
+        }
+        // ตัวแปรสำหรับเช็คว่าอยู่ใน focusGroup หรือไม่
+        var focus_marker = focusGroup.getLayers();
+        var focus_schoolID = focus_marker.map((marker) => {
+          return marker.options.schoolID;
+        });
+        var resultIDinFocus = [];
+
+        cleanTableContainer(); //ลบ child ทั้งหมดใน TBcontainer
+        let container = document.getElementById("TBcontainer");
+
+        // Create the table element
+        let table = document.createElement("table");
+        table.setAttribute("id", "tableProperties");
+        table.setAttribute("class", "table table-striped table-bordered");
+        table.setAttribute("style", "width:100%");
+
+        // Get the keys (column names) of the first object in the JSON data
+        let cols = Object.keys(school[0].properties);
+        cols.push("Action"); //เพื่อเพิ่มปุ่มสำหรับเพิ่มหรือลด
+        // Create the header element
+        let thead = document.createElement("thead");
+        let tr = document.createElement("tr");
+
+        // Loop through the column names and create header cells
+        cols.forEach((item) => {
+          let th = document.createElement("th");
+          th.innerText = item;
+          tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        table.append(thead);
+
+        let tb = document.createElement("tbody");
+        tb.setAttribute("id", "tableProperties_tbody");
+        // Loop through the JSON data and create table rows
+        school.forEach((item) => {
+          /// เก็บค่า schoolID ของ marker ที่อยู่ใน focus marker เพื่อใส่สี
+          if (focus_schoolID.includes(item.properties.schoolID)) {
+            resultIDinFocus.push(item.properties.schoolID);
+          }
+          let tr = document.createElement("tr");
+          tr.setAttribute(
+            "id",
+            "markerID" + item.properties.schoolID.toString()
+          );
+
+          let vals = Object.values(item.properties);
+
+          // Loop through the values and create table cells
+          vals.forEach((elem) => {
+            let td = document.createElement("td");
+            td.innerText = elem;
+            tr.appendChild(td);
+          });
+          /// create button in table to add shcool to focusGroup
+          let td_btn = document.createElement("td");
+          var btn = document.createElement("input");
+          btn.type = "button";
+          btn.className = "w3-button w3-blue";
+          btn.value = btntext;
+          btn.onclick = function () {
+            setBtnInTable(item.properties.schoolID, callFrom);
+          };
+          td_btn.appendChild(btn);
+          tr.appendChild(td_btn);
+          ///
+          tb.appendChild(tr);
+          table.appendChild(tb);
+        });
+        let tfoot = document.createElement("tfoot");
+        let trf = document.createElement("tr");
+
+        cols.forEach((item) => {
+          let th = document.createElement("th");
+          th.innerText = item;
+          trf.appendChild(th);
+        });
+        tfoot.appendChild(trf);
+        table.append(tfoot);
+        container.appendChild(table);
+        //  เรียกใช้ libary clickable table
+        $("#tableProperties").DataTable({
+          // searching: false,
+          paging: false,
+        });
+
+        // $(document).ready(function () {
+        //   $("#tableProperties").DataTable();
+        // });
+        // $("#tableProperties").dataTable({
+        //   paging: false, //ปิด option เลือกจำนวนข้อมูลที่แสดงในตาราง
+        // });
+
+        if (callFrom == "resultGroup") {
+          assingColorMarkerAndTable(resultIDinFocus);
+        }
+      }
+      //เปลี่ยนการแสดงผลตาราง สีของ marker และปุ่ม detail เมื่อมีการเปลี่ยน layer ระหว่าง reusltGroup กับ focusGroup  
+      function ChangeLayer() {
+        var detailBtn = document.getElementById("detailBtn");
+        map.on("baselayerchange", (e) => {
+          var markerToTable;
+          var school_GeoJson = [];
+          if (e.name == "focusGroup") {
+            markerToTable = focusGroup.getLayers();
+            detailBtn.style.display = "inline";
+          } else {
+            markerToTable = resultGroup.getLayers();
+            detailBtn.style.display = "none";
+          }
+
+          if (markerToTable.length == 0) {
+            cleanTableContainer();
+            return;
+          }
+          for (let i = 0; i < markerToTable.length; i++) {
+            school_GeoJson.push(markerToTable[i].toGeoJSON());
+          }
+          createTableAndAssignColor(school_GeoJson, e.name);
+        });
+      }
+      ///----------------------End Make Tabel function section--------------------------------------------
+      // -----------------------------End Function section------------------------------------------------
+      var map = L.map("mapid").setView(
+        [16.89328731316437, 100.42378353919568],
+        6
+      );
+
+      var osmUrl = "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+      var osmAttrib = "Map data © OpenStreetMap contributors";
+      var osm = new L.TileLayer(osmUrl, { attribution: osmAttrib });
+
+      var resultGroup = L.layerGroup();
+      var focusGroup = L.layerGroup();
+
+      var overlayLayers = {
+        resultGroup: resultGroup,
+        focusGroup: focusGroup,
+      };
+      map.addLayer(osm);
+      map.addLayer(resultGroup);
+      L.control.layers(overlayLayers).addTo(map);
+      ChangeLayer();
+      marker_arr = [];
+      // map.on('click',function(e){
+      //     clearMarker();
+      //     var content = `
+      //         <label for="lat">Latitude: </label>
+      //         <input type="number" class="w3-input" id="lat" value="${e.latlng.lat}"><br>
+
+      //         <label for="lng">Longtitude: </label>
+      //         <input type="number" class="w3-input" id="lng" value="${e.latlng.lng}"><br>
+      //     `;//ใน onClick สามารถสั่งให้ทำงานได้หลายฟังก์ชัน โดยแต่ละฟังก์ชันคั้นด้วย ";"
+
+      //     var mp = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup(content).openPopup();
+      //     marker_arr.push(mp);
+      // });
+    </script>
+    <br />
+    <div id="dataArrowContainer">
+      <button id="lArrowBut" style="font-size: 24px" onclick="pageButton(-1);">
+        <i class="fa fa-angle-left"></i>
+      </button>
+      <h4 id="curPageText">0</h4>
+      <button id="rArrowBut" style="font-size: 24px" onclick="pageButton(1);">
+        <i class="fa fa-angle-right"></i>
+      </button>
+    </div>
+    <br /><br />
+    <div class="container" id="TBcontainer"></div>
+  </body>
+</html>
